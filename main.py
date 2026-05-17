@@ -4,13 +4,10 @@ app = FastAPI()
 
 @app.get("/")
 def hello_world():
-    return {"message": "Hello, World v2!"}
+    return {"message": "Hello from Docker!"}
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
-
-
-
 
 
