@@ -17,9 +17,12 @@ jobs:
           script: |
             cd ~/my_app
             git pull origin main
-            source venv/bin/activate
-            pip install -r requirements.txt
-            sudo systemctl restart my_app
+            docker build -t my_app .
+            docker stop my_app || true
+            docker rm my_app || true
+            docker run -d -p 8080:8080 --name my_app --restart always my_app
+
+
 
 
 
