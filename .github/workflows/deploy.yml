@@ -43,10 +43,26 @@ jobs:
       - name: Security scan dependencies
         run: pip-audit -r requirements.txt
 
-  # Stage 3: Deploy (only if all stages pass)
-  deploy:
+  # Stage 3: Integration Tests
+  integration-tests:
     runs-on: ubuntu-latest
     needs: static-analysis
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run integration tests
+        run: pytest tests/integration/ -v
+
+  # Stage 4: Deploy
+  deploy:
+    runs-on: ubuntu-latest
+    needs: integration-tests
     steps:
       - name: SSH and deploy
         uses: appleboy/ssh-action@master
@@ -61,3 +77,21 @@ jobs:
             docker stop my_app || true
             docker rm my_app || true
             docker run -d -p 8080:8080 --name my_app --restart always my_app
+
+  # Stage 5: Smoke Tests
+  smoke-tests:
+    runs-on: ubuntu-latest
+    needs: deploy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run smoke tests
+        env:
+          APP_URL: "http://${{ secrets.DROPLET_IP }}:8080"
+        run: pytest tests/smoke/ -v
