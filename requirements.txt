@@ -3,6 +3,9 @@ uvicorn[standard]
 gunicorn
 pytest
 httpx
-
+flake8
+black
+bandit
+pip-audit
 
 
