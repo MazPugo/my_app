@@ -1,7 +1,7 @@
 import requests
 import os
 
-BASE_URL = os.getenv("APP_URL", "http://localhost:8080")
+BASE_URL = os.getenv("APP_URL", "https://myappguru.net")
 
 
 def test_app_is_live():

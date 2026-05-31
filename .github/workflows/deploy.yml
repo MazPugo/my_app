@@ -93,5 +93,5 @@ jobs:
           pip install -r requirements.txt
       - name: Run smoke tests
         env:
-          APP_URL: "http://${{ secrets.DROPLET_IP }}:8080"
+          APP_URL: "https://myappguru.net"
         run: pytest tests/smoke/ -v
