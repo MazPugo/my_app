@@ -5,7 +5,13 @@ app = FastAPI()
 
 app.add_middleware(
     TrustedHostMiddleware,
-    allowed_hosts=["myappguru.net", "www.myappguru.net"]
+    allowed_hosts=[
+        "myappguru.net",
+        "www.myappguru.net",
+        "localhost",
+        "testserver",
+        "127.0.0.1",
+    ]
 )
 
 
