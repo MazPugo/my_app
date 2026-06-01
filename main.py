@@ -11,7 +11,7 @@ app.add_middleware(
         "localhost",
         "testserver",
         "127.0.0.1",
-    ]
+    ],
 )
 
 
