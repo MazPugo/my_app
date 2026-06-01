@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
 
   # Stage 1: Unit Tests
@@ -76,6 +79,8 @@ jobs:
             docker build -t my_app .
             docker stop my_app || true
             docker rm my_app || true
+            docker stop my-app || true
+            docker rm my-app || true
             docker run -d -p 8080:8080 --name my_app --restart always my_app
 
   # Stage 5: Smoke Tests
