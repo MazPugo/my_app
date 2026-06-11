@@ -8,3 +8,6 @@ black
 bandit
 pip-audit
 requests
+sqlalchemy
+psycopg2-binary
+python-dotenv
