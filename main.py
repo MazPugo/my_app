@@ -5,10 +5,11 @@ from typing import List
 import models
 import schemas
 from database import engine, get_db
+from auth import hash_password
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI()
+app = FastAPI(title="MyAppGuru Product Catalog", version="1.0.0")
 
 app.add_middleware(
     TrustedHostMiddleware,
@@ -18,7 +19,7 @@ app.add_middleware(
 
 @app.get("/")
 def hello_world():
-    return {"message": "Hello World!"}
+    return {"message": "Welcome to MyAppGuru Product Catalog!"}
 
 
 @app.get("/health")
@@ -26,33 +27,107 @@ def health():
     return {"status": "ok"}
 
 
-@app.post("/items", response_model=schemas.ItemResponse)
-def create_item(item: schemas.ItemCreate, db: Session = Depends(get_db)):
-    db_item = models.Item(name=item.name, description=item.description)
-    db.add(db_item)
+# Categories
+@app.post("/categories", response_model=schemas.CategoryResponse)
+def create_category(category: schemas.CategoryCreate, db: Session = Depends(get_db)):
+    db_category = models.Category(name=category.name, description=category.description)
+    db.add(db_category)
     db.commit()
-    db.refresh(db_item)
-    return db_item
+    db.refresh(db_category)
+    return db_category
 
 
-@app.get("/items", response_model=List[schemas.ItemResponse])
-def get_items(db: Session = Depends(get_db)):
-    return db.query(models.Item).all()
+@app.get("/categories", response_model=List[schemas.CategoryResponse])
+def get_categories(db: Session = Depends(get_db)):
+    return db.query(models.Category).all()
 
 
-@app.get("/items/{item_id}", response_model=schemas.ItemResponse)
-def get_item(item_id: int, db: Session = Depends(get_db)):
-    item = db.query(models.Item).filter(models.Item.id == item_id).first()
-    if not item:
-        raise HTTPException(status_code=404, detail="Item not found")
-    return item
-
-
-@app.delete("/items/{item_id}")
-def delete_item(item_id: int, db: Session = Depends(get_db)):
-    item = db.query(models.Item).filter(models.Item.id == item_id).first()
-    if not item:
-        raise HTTPException(status_code=404, detail="Item not found")
-    db.delete(item)
+# Products
+@app.post("/products", response_model=schemas.ProductResponse)
+def create_product(product: schemas.ProductCreate, db: Session = Depends(get_db)):
+    db_product = models.Product(
+        name=product.name,
+        description=product.description,
+        price=product.price,
+        stock=product.stock,
+        currency=product.currency,
+        category_id=product.category_id,
+    )
+    db.add(db_product)
     db.commit()
-    return {"message": "Item deleted"}
+    db.refresh(db_product)
+    return db_product
+
+
+@app.get("/products", response_model=List[schemas.ProductResponse])
+def get_products(db: Session = Depends(get_db)):
+    return db.query(models.Product).all()
+
+
+@app.get("/products/{product_id}", response_model=schemas.ProductResponse)
+def get_product(product_id: int, db: Session = Depends(get_db)):
+    product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return product
+
+
+@app.delete("/products/{product_id}")
+def delete_product(product_id: int, db: Session = Depends(get_db)):
+    product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    db.delete(product)
+    db.commit()
+    return {"message": "Product deleted"}
+
+
+# Users
+@app.post("/users", response_model=schemas.UserResponse)
+def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    existing = db.query(models.User).filter(models.User.email == user.email).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    db_user = models.User(
+        username=user.username,
+        email=user.email,
+        hashed_password=hash_password(user.password),
+    )
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+
+@app.get("/users", response_model=List[schemas.UserResponse])
+def get_users(db: Session = Depends(get_db)):
+    return db.query(models.User).all()
+
+
+# Orders
+@app.post("/orders", response_model=schemas.OrderResponse)
+def create_order(order: schemas.OrderCreate, db: Session = Depends(get_db)):
+    product = (
+        db.query(models.Product).filter(models.Product.id == order.product_id).first()
+    )
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    if product.stock < order.quantity:
+        raise HTTPException(status_code=400, detail="Not enough stock")
+    total_price = product.price * order.quantity
+    db_order = models.Order(
+        user_id=order.user_id,
+        product_id=order.product_id,
+        quantity=order.quantity,
+        total_price=total_price,
+    )
+    product.stock -= order.quantity
+    db.add(db_order)
+    db.commit()
+    db.refresh(db_order)
+    return db_order
+
+
+@app.get("/orders", response_model=List[schemas.OrderResponse])
+def get_orders(db: Session = Depends(get_db)):
+    return db.query(models.Order).all()
