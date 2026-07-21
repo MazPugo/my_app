@@ -18,8 +18,27 @@ app.add_middleware(
 
 
 @app.get("/")
-def hello_world():
-    return {"message": "Welcome to MyAppGuru Product Catalog!"}
+def hello_world(db: Session = Depends(get_db)):
+    products = db.query(models.Product).all()
+    categories = db.query(models.Category).all()
+    users = db.query(models.User).all()
+    orders = db.query(models.Order).all()
+    return {
+        "message": "Welcome to MyAppGuru Product Catalog!",
+        "stats": {
+            "total_products": len(products),
+            "total_categories": len(categories),
+            "total_users": len(users),
+            "total_orders": len(orders),
+        },
+        "endpoints": {
+            "products": "/products",
+            "categories": "/categories",
+            "users": "/users",
+            "orders": "/orders",
+            "docs": "/docs",
+        },
+    }
 
 
 @app.get("/health")
